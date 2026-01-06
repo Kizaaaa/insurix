@@ -1,24 +1,21 @@
 import hre from "hardhat";
-import { ethers } from "ethers";
 
 // Your deployed contract address
 const CONTRACT_ADDRESS = "0xf8E4F4d4e86c63684170D577e445F4245558c660";
 
 async function main() {
-  // Get the provider and signer from Hardhat 3
+  // Connect to the network
   const connection = await hre.network.connect();
-  const provider = new ethers.BrowserProvider(connection);
-  const deployer = await provider.getSigner();
+  
+  // Get the signer
+  const [deployer] = await connection.ethers.getSigners();
   
   console.log("Setting up FlightInsurance contract...");
   console.log("Account:", deployer.address);
-  console.log("Balance:", ethers.formatEther(await provider.getBalance(deployer.address)), "ETH");
+  console.log("Balance:", connection.ethers.formatEther(await connection.ethers.provider.getBalance(deployer.address)), "ETH");
 
-  // Get contract ABI from artifacts
-  const artifact = await hre.artifacts.readArtifact("FlightInsurance");
-  
   // Get contract instance
-  const flightInsurance = new ethers.Contract(CONTRACT_ADDRESS, artifact.abi, deployer);
+  const flightInsurance = await connection.ethers.getContractAt("FlightInsurance", CONTRACT_ADDRESS, deployer);
 
   // Check current owner
   const owner = await flightInsurance.owner();
@@ -44,12 +41,12 @@ async function main() {
 
   // 2. Fund the reserve
   const currentReserve = await flightInsurance.reserveBalance();
-  console.log("\n2. Current reserve:", ethers.formatEther(currentReserve), "ETH");
+  console.log("\n2. Current reserve:", connection.ethers.formatEther(currentReserve), "ETH");
   
-  const fundAmount = ethers.parseEther("0.01"); // Fund with 0.01 ETH for testing
+  const fundAmount = connection.ethers.parseEther("0.01"); // Fund with 0.01 ETH for testing
   
   if (currentReserve < fundAmount) {
-    console.log("   Funding reserve with", ethers.formatEther(fundAmount), "ETH...");
+    console.log("   Funding reserve with", connection.ethers.formatEther(fundAmount), "ETH...");
     const fundTx = await flightInsurance.fundReserve({ value: fundAmount });
     await fundTx.wait();
     console.log("   ✅ Reserve funded! Tx:", fundTx.hash);
@@ -61,9 +58,9 @@ async function main() {
   console.log("\n=== Contract Status ===");
   console.log("Address:", CONTRACT_ADDRESS);
   console.log("Owner:", await flightInsurance.owner());
-  console.log("Reserve Balance:", ethers.formatEther(await flightInsurance.reserveBalance()), "ETH");
-  console.log("Min Premium:", ethers.formatEther(await flightInsurance.minPremium()), "ETH");
-  console.log("Max Premium:", ethers.formatEther(await flightInsurance.maxPremium()), "ETH");
+  console.log("Reserve Balance:", connection.ethers.formatEther(await flightInsurance.reserveBalance()), "ETH");
+  console.log("Min Premium:", connection.ethers.formatEther(await flightInsurance.minPremium()), "ETH");
+  console.log("Max Premium:", connection.ethers.formatEther(await flightInsurance.maxPremium()), "ETH");
   console.log("Payout Multiplier:", (await flightInsurance.payoutMultiplier()).toString(), "x");
   
   // Check oracle status
